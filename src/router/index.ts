@@ -67,6 +67,11 @@ const router = createRouter({
           name: 'task-detail',
           component: () => import('../views/TaskDetailView.vue'),
         },
+        {
+          path: 'knowledge-base',
+          name: 'knowledge-base',
+          component: () => import('../views/KnowledgeBaseView.vue'),
+        },
       ],
     },
     {

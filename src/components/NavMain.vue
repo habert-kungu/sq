@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Component } from "vue"
 import { IconCirclePlusFilled, IconMail } from "@tabler/icons-vue"
+import { RouterLink } from 'vue-router'
 
 import { Button } from '@/components/ui/button'
 import {
@@ -47,10 +48,10 @@ defineProps<{
       <SidebarMenu v-if="items.length > 0">
         <SidebarMenuItem v-for="item in items" :key="item.title">
           <SidebarMenuButton as-child :tooltip="item.title">
-            <a :href="item.url">
+            <RouterLink :to="item.url">
               <component :is="item.icon" v-if="item.icon" />
               <span>{{ item.title }}</span>
-            </a>
+            </RouterLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>

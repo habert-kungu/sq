@@ -29,6 +29,7 @@ interface NavItem {
   url: string
   icon?: Component
   isActive?: boolean
+  disabled?: boolean
   items?: SubItem[]
 }
 
@@ -79,7 +80,17 @@ defineProps<{
 
         <!-- Simple item without sub-items -->
         <SidebarMenuItem v-else>
-          <SidebarMenuButton as-child :tooltip="item.title">
+          <SidebarMenuButton 
+            v-if="item.disabled"
+            :tooltip="item.title + ' (Coming Soon)'"
+            class="opacity-50 cursor-not-allowed"
+            disabled
+          >
+            <component :is="item.icon" v-if="item.icon" />
+            <span>{{ item.title }}</span>
+            <span class="ml-auto text-xs text-muted-foreground">Soon</span>
+          </SidebarMenuButton>
+          <SidebarMenuButton v-else as-child :tooltip="item.title">
             <RouterLink :to="item.url">
               <component :is="item.icon" v-if="item.icon" />
               <span>{{ item.title }}</span>

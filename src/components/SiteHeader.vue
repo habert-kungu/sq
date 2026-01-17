@@ -22,7 +22,7 @@ defineProps<{
       <div class="ml-auto flex items-center gap-2">
         <Button variant="ghost" as-child size="sm" class="hidden sm:flex">
           <a
-            href="https://github.com/nathanlegal"
+            href="https://github.com/habert-kungu"
             rel="noopener noreferrer"
             target="_blank"
             class="dark:text-foreground"

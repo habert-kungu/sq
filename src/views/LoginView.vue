@@ -11,7 +11,7 @@ import LoginForm from '@/components/new-york-v4/blocks/login-02/components/Login
           <div class="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
             <IconScale class="size-4" />
           </div>
-          Nathan Legal
+          Legal
         </a>
       </div>
       <div class="flex flex-1 items-center justify-center">

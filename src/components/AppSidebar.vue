@@ -44,7 +44,7 @@ import {
 const data = {
   user: {
     name: "John Doe",
-    email: "john@nathanlegal.com",
+    email: "john@omagalegal.com",
     avatar: "/avatars/user.jpg",
   },
     Home:{
@@ -52,7 +52,7 @@ const data = {
       url: "/dashboard",
       icon: IconDashboard,
     },
-  
+
   // 📊 Workspace
   workspace: [
     {
@@ -66,7 +66,7 @@ const data = {
       icon: IconFileDescription,
     },
   ],
-  
+
   // 👥 Client Management
   clientManagement: [
     {
@@ -90,13 +90,14 @@ const data = {
       icon: IconChecklist,
     },
   ],
-  
+
   // ⚖️ Compliance & Operations
   compliance: [
     {
       title: "KYC Management",
       url: "/kyc",
       icon: IconShieldCheck,
+      disabled: true,
     },
     {
       title: "Knowledge Base",
@@ -107,15 +108,17 @@ const data = {
       title: "Reports",
       url: "/reports",
       icon: IconReport,
+      disabled: true,
     },
   ],
-  
+
   // 💰 Financial Management
   financial: [
     {
       title: "Time & Expenses",
       url: "/time-expenses",
       icon: IconCalendarTime,
+      disabled: true,
     },
     {
       title: "Billing",
@@ -139,21 +142,23 @@ const data = {
       ],
     },
   ],
-  
+
   // 🔧 System
   system: [
     {
       title: "Employees",
       url: "/employees",
       icon: IconUsersGroup,
+      disabled: true,
     },
     {
       title: "Admin Panel",
       url: "/admin",
       icon: IconSettings,
+      disabled: true,
     },
   ],
-  
+
   // Secondary navigation
   navSecondary: [
     {
@@ -186,13 +191,13 @@ const data = {
           >
             <RouterLink to="/dashboard">
               <IconInnerShadowTop class="!size-5" />
-              <span class="text-base font-semibold">Nathan Legal</span>
+              <span class="text-base font-semibold">Legal</span>
             </RouterLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarHeader>
-    
+
     <SidebarContent>
       <!-- Dashboard -->
       <SidebarGroup>
@@ -207,28 +212,28 @@ const data = {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarGroup>
-      
+
       <!-- Workspace -->
       <NavGroup label="Workspace" :items="data.workspace" />
-      
+
       <!-- Client Management -->
       <NavGroup label="Client Management" :items="data.clientManagement" />
-      
+
       <!-- Compliance & Operations -->
       <NavGroup label="Compliance" :items="data.compliance" />
-      
+
       <!-- Financial Management -->
       <NavGroup label="Financial" :items="data.financial" />
-      
+
       <SidebarSeparator />
-      
+
       <!-- System -->
       <NavGroup label="System" :items="data.system" />
-      
+
       <!-- Secondary Navigation -->
       <NavSecondary :items="data.navSecondary" class="mt-auto" />
     </SidebarContent>
-    
+
     <SidebarFooter>
       <NavUser :user="data.user" />
     </SidebarFooter>

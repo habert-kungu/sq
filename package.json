@@ -23,7 +23,7 @@
     "@dnd-kit/core": "^6.3.1",
     "@dnd-kit/sortable": "^10.0.0",
     "@dnd-kit/utilities": "^3.2.2",
-    "@tabler/icons-vue": "^3.36.0",
+    "@tabler/icons-vue": "^3.19.0",
     "@tailwindcss/vite": "^4.1.18",
     "@tanstack/vue-table": "^8.21.3",
     "@unovis/ts": "^1.6.2",
@@ -44,7 +44,7 @@
   "devDependencies": {
     "@playwright/test": "^1.57.0",
     "@prettier/plugin-oxc": "^0.0.5",
-    "@tsconfig/node24": "^24.0.3",
+    "@tsconfig/node24": "^24.0.4",
     "@types/jsdom": "^27.0.0",
     "@types/node": "^24.10.4",
     "@vitejs/plugin-vue": "^6.0.2",

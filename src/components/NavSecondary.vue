@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Component } from "vue"
+import { RouterLink } from 'vue-router'
 
 import {
   SidebarGroup,
@@ -29,10 +30,10 @@ defineProps<{
           :key="item.title"
         >
           <SidebarMenuButton as-child>
-            <a :href="item.url">
+            <RouterLink :to="item.url">
               <component :is="item.icon" v-if="item.icon" />
               {{ item.title }}
-            </a>
+            </RouterLink>
           </SidebarMenuButton>
         </SidebarMenuItem>
       </SidebarMenu>
