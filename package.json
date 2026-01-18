@@ -25,6 +25,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@tabler/icons-vue": "^3.19.0",
     "@tailwindcss/vite": "^4.1.18",
+    "@tanstack/ai-vue": "^0.2.2",
     "@tanstack/vue-table": "^8.21.3",
     "@unovis/ts": "^1.6.2",
     "@unovis/vue": "^1.6.2",

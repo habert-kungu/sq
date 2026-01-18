@@ -27,11 +27,12 @@ const pageTitle = computed(() => {
       '--sidebar-width': 'calc(var(--spacing) * 72)',
       '--header-height': 'calc(var(--spacing) * 12)',
     }"
+    class="h-screen overflow-hidden"
   >
     <AppSidebar variant="inset" />
-    <SidebarInset class="transition-all duration-300 ease-in-out will-change-[margin]">
+    <SidebarInset class="flex h-screen flex-col overflow-hidden">
       <SiteHeader :title="pageTitle" />
-      <div class="flex flex-1 flex-col overflow-hidden bg-background transition-all duration-300 ease-in-out will-change-[margin,padding]">
+      <div class="flex flex-1 overflow-hidden bg-background">
         <RouterView />
       </div>
     </SidebarInset>

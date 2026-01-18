@@ -78,6 +78,38 @@ class KnowledgeAPI {
   }
 
   /**
+   * Bulk upload multiple documents
+   */
+  async bulkUploadDocuments(files: File[], metadata: {
+    category: string
+    tags?: string[]
+  }): Promise<{ success: number; failed: number; results: any[] }> {
+    const formData = new FormData()
+    
+    // Append all files
+    files.forEach((file) => {
+      formData.append('files', file)
+    })
+    
+    // Append metadata
+    formData.append('category', metadata.category)
+    if (metadata.tags) formData.append('tags', JSON.stringify(metadata.tags))
+
+    const response = await fetch(`${API_BASE_URL}/knowledge/bulk-upload`, {
+      method: 'POST',
+      body: formData,
+    })
+
+    if (!response.ok) {
+      const error = await response.json()
+      throw new Error(error.message || 'Failed to bulk upload documents')
+    }
+
+    const result = await response.json()
+    return result.data
+  }
+
+  /**
    * Get all documents with pagination and filters
    */
   async getDocuments(params?: {

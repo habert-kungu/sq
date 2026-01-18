@@ -39,7 +39,7 @@ const emit = defineEmits<{
 const { success: showSuccess, error: showError } = useToast()
 
 // Form data
-const selectedFile = ref<File | null>(null)
+const selectedFiles = ref<File[]>([])
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const title = ref('')
 const category = ref('')
@@ -66,24 +66,36 @@ const categories = [
 const handleFileSelect = (event: Event) => {
   const target = event.target as HTMLInputElement
   if (target.files && target.files.length > 0) {
-    const file = target.files[0]
-    if (isValidFileType(file)) {
-      if (file.size > 50 * 1024 * 1024) {
-        showError('File too large', 'Maximum file size is 50MB')
-        return
+    const newFiles = Array.from(target.files).filter(file => {
+      if (!isValidFileType(file)) {
+        showError('Invalid file type', `${file.name}: Please upload PDF, DOCX, TXT, or CSV files`)
+        return false
       }
-      selectedFile.value = file
-      title.value = file.name.replace(/\.[^/.]+$/, '')
-      suggestCategory(file.name)
-    } else {
-      showError('Invalid file type', 'Please upload a PDF, DOCX, or TXT file')
+      if (file.size > 500 * 1024 * 1024) {
+        showError('File too large', `${file.name}: Maximum file size is 500MB`)
+        return false
+      }
+      return true
+    })
+    
+    selectedFiles.value = [...selectedFiles.value, ...newFiles]
+    
+    // If this is the first file, auto-populate title and category
+    if (selectedFiles.value.length === newFiles.length && newFiles.length > 0) {
+      title.value = newFiles[0].name.replace(/\.[^/.]+$/, '')
+      suggestCategory(newFiles[0].name)
     }
   }
 }
 
 // Validate file type
 const isValidFileType = (file: File): boolean => {
-  const validTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain']
+  const validTypes = [
+    'application/pdf',
+    'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    'text/plain',
+    'text/csv'
+  ]
   return validTypes.includes(file.type)
 }
 
@@ -103,8 +115,8 @@ const suggestCategory = (filename: string) => {
 }
 
 // Remove selected file
-const removeFile = () => {
-  selectedFile.value = null
+const removeFile = (index: number) => {
+  selectedFiles.value.splice(index, 1)
   if (fileInputRef.value) {
     fileInputRef.value.value = ''
   }
@@ -121,13 +133,8 @@ const formatFileSize = (bytes: number): string => {
 
 // Handle form submission
 const handleUpload = async () => {
-  if (!selectedFile.value) {
-    showError('No file selected', 'Please select a file to upload')
-    return
-  }
-
-  if (!title.value.trim()) {
-    showError('Title required', 'Please enter a document title')
+  if (selectedFiles.value.length === 0) {
+    showError('No files selected', 'Please select at least one file to upload')
     return
   }
 
@@ -152,17 +159,29 @@ const handleUpload = async () => {
       .map((tag) => tag.trim())
       .filter((tag) => tag !== '')
 
-    await knowledgeAPI.uploadDocument(selectedFile.value, {
-      title: title.value,
-      description: description.value || '',
-      category: category.value,
-      tags: tagsArray,
-    })
+    // Use bulk upload if multiple files, single upload if one file
+    if (selectedFiles.value.length === 1) {
+      await knowledgeAPI.uploadDocument(selectedFiles.value[0], {
+        title: title.value || selectedFiles.value[0].name.replace(/\.[^/.]+$/, ''),
+        description: description.value || '',
+        category: category.value,
+        tags: tagsArray,
+      })
+    } else {
+      await knowledgeAPI.bulkUploadDocuments(selectedFiles.value, {
+        category: category.value,
+        tags: tagsArray,
+      })
+    }
 
     clearInterval(progressInterval)
     uploadProgress.value = 100
 
-    showSuccess('Document uploaded successfully')
+    const message = selectedFiles.value.length === 1 
+      ? 'Document uploaded successfully'
+      : `${selectedFiles.value.length} documents uploaded successfully`
+    
+    showSuccess(message)
     emit('success')
     handleClose()
   } catch (error: any) {
@@ -175,7 +194,7 @@ const handleUpload = async () => {
 
 // Handle close
 const handleClose = () => {
-  selectedFile.value = null
+  selectedFiles.value = []
   title.value = ''
   category.value = ''
   description.value = ''
@@ -190,7 +209,7 @@ const handleClose = () => {
 watch(() => props.open, (newValue) => {
   if (!newValue) {
     setTimeout(() => {
-      selectedFile.value = null
+      selectedFiles.value = []
       title.value = ''
       category.value = ''
       description.value = ''
@@ -213,13 +232,13 @@ watch(() => props.open, (newValue) => {
       <div class="space-y-5 py-4">
         <!-- File Upload -->
         <div class="space-y-2">
-          <Label class="text-sm font-medium">Document File</Label>
+          <Label class="text-sm font-medium">Document Files</Label>
           <p class="text-xs text-muted-foreground">
-            Upload a PDF, DOCX, or TXT file (max 50MB)
+            Upload PDF, DOCX, TXT, or CSV files (max 500MB each, up to 10 files)
           </p>
           
           <!-- File Input -->
-          <div v-if="!selectedFile">
+          <div>
             <label class="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer hover:bg-muted/50 transition-colors">
               <div class="flex flex-col items-center justify-center py-4">
                 <IconUpload class="size-8 text-muted-foreground mb-2" />
@@ -227,37 +246,43 @@ watch(() => props.open, (newValue) => {
                   <span class="font-medium">Click to upload</span> or drag and drop
                 </p>
                 <p class="text-xs text-muted-foreground mt-1">
-                  PDF, DOCX or TXT (max 50MB)
+                  PDF, DOCX, TXT or CSV (max 500MB each)
+                </p>
+                <p v-if="selectedFiles.length > 0" class="text-xs text-primary mt-2 font-medium">
+                  {{ selectedFiles.length }} file(s) selected
                 </p>
               </div>
               <input
                 ref="fileInputRef"
                 type="file"
                 class="hidden"
-                accept=".pdf,.docx,.txt"
+                accept=".pdf,.docx,.txt,.csv"
+                multiple
                 @change="handleFileSelect"
               />
             </label>
           </div>
 
-          <!-- Selected File Display -->
-          <div v-else class="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
-            <div class="flex size-10 items-center justify-center rounded-md bg-primary/10">
-              <IconFile class="size-5 text-primary" />
+          <!-- Selected Files Display -->
+          <div v-if="selectedFiles.length > 0" class="space-y-2 mt-3">
+            <div v-for="(file, index) in selectedFiles" :key="index" class="flex items-center gap-3 p-3 border rounded-lg bg-muted/50">
+              <div class="flex size-10 items-center justify-center rounded-md bg-primary/10">
+                <IconFile class="size-5 text-primary" />
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-sm font-medium truncate">{{ file.name }}</p>
+                <p class="text-xs text-muted-foreground">{{ formatFileSize(file.size) }}</p>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                class="size-8 flex-shrink-0"
+                @click="removeFile(index)"
+              >
+                <IconX class="size-4" />
+              </Button>
             </div>
-            <div class="flex-1 min-w-0">
-              <p class="text-sm font-medium truncate">{{ selectedFile.name }}</p>
-              <p class="text-xs text-muted-foreground">{{ formatFileSize(selectedFile.size) }}</p>
-            </div>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              class="size-8 flex-shrink-0"
-              @click="removeFile"
-            >
-              <IconX class="size-4" />
-            </Button>
           </div>
         </div>
 
@@ -265,14 +290,14 @@ watch(() => props.open, (newValue) => {
         <div class="grid grid-cols-2 gap-4">
           <!-- Title -->
           <div class="space-y-2">
-            <Label for="upload-title" class="text-sm font-medium">Document Title</Label>
+            <Label for="upload-title" class="text-sm font-medium">Document Title (Optional)</Label>
             <Input
               id="upload-title"
               v-model="title"
               placeholder="Enter document title"
             />
             <p class="text-xs text-muted-foreground">
-              A descriptive title for your document
+              Auto-generated from filename if empty (for single files)
             </p>
           </div>
 
@@ -340,8 +365,8 @@ watch(() => props.open, (newValue) => {
         <Button type="button" variant="outline" @click="handleClose" :disabled="uploading">
           Cancel
         </Button>
-        <Button type="button" @click="handleUpload" :disabled="!selectedFile || uploading">
-          {{ uploading ? 'Uploading...' : 'Upload Document' }}
+        <Button type="button" @click="handleUpload" :disabled="selectedFiles.length === 0 || uploading">
+          {{ uploading ? 'Uploading...' : `Upload ${selectedFiles.length > 0 ? `(${selectedFiles.length})` : 'Documents'}` }}
         </Button>
       </DialogFooter>
     </DialogContent>

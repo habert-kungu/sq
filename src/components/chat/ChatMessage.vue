@@ -15,11 +15,19 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 
+export interface SourceDocument {
+  id: string
+  title: string
+  score: number
+  category: string
+}
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: Date
+  sources?: SourceDocument[]
 }
 
 const props = defineProps<{
@@ -89,8 +97,24 @@ function handleFeedback(type: 'up' | 'down') {
       
       <!-- Content -->
       <div class="flex flex-1 flex-col gap-3 min-w-0">
-        <div class="text-sm leading-relaxed text-foreground">
+        <div class="text-sm leading-relaxed text-foreground whitespace-pre-wrap">
           {{ message.content }}
+        </div>
+        
+        <!-- Source Documents -->
+        <div v-if="message.sources && message.sources.length > 0" class="flex flex-col gap-2">
+          <div class="text-xs font-medium text-muted-foreground">Sources:</div>
+          <div class="flex flex-wrap gap-2">
+            <div
+              v-for="source in message.sources"
+              :key="source.id"
+              class="inline-flex items-center gap-1.5 rounded-md bg-muted px-2.5 py-1 text-xs"
+            >
+              <span class="font-medium">{{ source.title }}</span>
+              <span class="text-muted-foreground">{{ source.category }}</span>
+              <span class="text-muted-foreground/70">({{ (source.score * 100).toFixed(0) }}%)</span>
+            </div>
+          </div>
         </div>
         
         <!-- Actions -->

@@ -38,6 +38,14 @@ import { useWebSocket } from '@/composables/useWebSocket'
 import { Button } from '@/components/ui/button'
 import { Checkbox } from '@/components/ui/checkbox'
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -82,6 +90,10 @@ const sorting = ref<SortingState>([])
 const columnFilters = ref<ColumnFiltersState>([])
 const columnVisibility = ref<VisibilityState>({})
 const rowSelection = ref({})
+
+// Delete confirmation dialog state
+const deleteDialogOpen = ref(false)
+const deleteTarget = ref<{ type: 'single' | 'bulk', id?: string, count?: number } | null>(null)
 
 // Pagination
 const currentPage = ref(1)
@@ -130,14 +142,14 @@ const columns: ColumnDef<KnowledgeDocument>[] = [
     id: 'select',
     header: ({ table }) =>
       h(Checkbox, {
-        checked: table.getIsAllPageRowsSelected(),
-        'onUpdate:checked': (value: boolean) => table.toggleAllPageRowsSelected(!!value),
+        modelValue: table.getIsAllPageRowsSelected() || (table.getIsSomePageRowsSelected() && 'indeterminate'),
+        'onUpdate:modelValue': (value: boolean) => table.toggleAllPageRowsSelected(!!value),
         ariaLabel: 'Select all',
       }),
     cell: ({ row }) =>
       h(Checkbox, {
-        checked: row.getIsSelected(),
-        'onUpdate:checked': (value: boolean) => row.toggleSelected(!!value),
+        modelValue: row.getIsSelected(),
+        'onUpdate:modelValue': (value: boolean) => row.toggleSelected(!!value),
         ariaLabel: 'Select row',
       }),
     enableSorting: false,
@@ -301,6 +313,8 @@ const table = useVueTable({
       return rowSelection.value
     },
   },
+  getRowId: (row) => row._id,
+  enableRowSelection: true,
   manualPagination: true,
   pageCount: totalPages.value,
 })
@@ -338,35 +352,47 @@ const handleDownload = async (id: string) => {
   }
 }
 
-// Handle delete
-const handleDelete = async (id: string) => {
-  if (!confirm('Are you sure you want to delete this document?')) return
+// Handle delete - Opens confirmation dialog
+const handleDelete = (id: string) => {
+  deleteTarget.value = { type: 'single', id }
+  deleteDialogOpen.value = true
+}
+
+// Confirm delete action
+const confirmDelete = async () => {
+  if (!deleteTarget.value) return
 
   try {
-    await knowledgeAPI.deleteDocument(id)
-    showSuccess('Document deleted successfully')
-    fetchDocuments()
+    if (deleteTarget.value.type === 'single' && deleteTarget.value.id) {
+      console.log(`🗑️  Deleting document: ${deleteTarget.value.id}`)
+      await knowledgeAPI.deleteDocument(deleteTarget.value.id)
+      showSuccess('Document deleted successfully')
+      fetchDocuments()
+    } else if (deleteTarget.value.type === 'bulk') {
+      const selectedRows = table.getSelectedRowModel().rows
+      const ids = selectedRows.map((row) => row.original._id)
+      console.log(`🗑️  Bulk deleting ${ids.length} documents:`, ids)
+      await knowledgeAPI.bulkDeleteDocuments(ids)
+      showSuccess(`Deleted ${ids.length} document(s)`)
+      rowSelection.value = {}
+      fetchDocuments()
+    }
   } catch (error: any) {
+    console.error('❌ Delete failed:', error)
     showError('Delete failed', error.message)
+  } finally {
+    deleteDialogOpen.value = false
+    deleteTarget.value = null
   }
 }
 
-// Handle bulk delete
-const handleBulkDelete = async () => {
+// Handle bulk delete - Opens confirmation dialog
+const handleBulkDelete = () => {
   const selectedRows = table.getSelectedRowModel().rows
   if (selectedRows.length === 0) return
 
-  if (!confirm(`Are you sure you want to delete ${selectedRows.length} document(s)?`)) return
-
-  try {
-    const ids = selectedRows.map((row) => row.original._id)
-    await knowledgeAPI.bulkDeleteDocuments(ids)
-    showSuccess(`Deleted ${selectedRows.length} document(s)`)
-    rowSelection.value = {}
-    fetchDocuments()
-  } catch (error: any) {
-    showError('Bulk delete failed', error.message)
-  }
+  deleteTarget.value = { type: 'bulk', count: selectedRows.length }
+  deleteDialogOpen.value = true
 }
 
 // Watch for filter changes
@@ -439,6 +465,16 @@ const selectedRowsCount = computed(() => {
         <h1 class="text-base font-semibold">Knowledge Base</h1>
       </div>
       <div class="flex items-center gap-2">
+        <Button
+          v-if="selectedRowsCount > 0"
+          size="sm"
+          variant="destructive"
+          class="gap-1.5 h-8 text-xs"
+          @click="handleBulkDelete"
+        >
+          <IconTrash class="size-3.5" />
+          Delete {{ selectedRowsCount }} document(s)
+        </Button>
         <Button size="sm" class="gap-1.5 h-8 text-xs" @click="emit('upload')">
           <IconPlus class="size-3.5" />
           Add Document
@@ -601,5 +637,30 @@ const selectedRowsCount = computed(() => {
         </div>
       </div>
     </div>
+
+    <!-- Delete Confirmation Dialog -->
+    <Dialog v-model:open="deleteDialogOpen">
+      <DialogContent class="sm:max-w-[425px]">
+        <DialogHeader>
+          <DialogTitle>Confirm Deletion</DialogTitle>
+          <DialogDescription>
+            <span v-if="deleteTarget?.type === 'single'">
+              Are you sure you want to delete this document? This action cannot be undone.
+            </span>
+            <span v-else-if="deleteTarget?.type === 'bulk'">
+              Are you sure you want to delete {{ deleteTarget.count }} document(s)? This action cannot be undone.
+            </span>
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter class="gap-2 sm:gap-0">
+          <Button variant="outline" @click="deleteDialogOpen = false">
+            Cancel
+          </Button>
+          <Button variant="destructive" @click="confirmDelete">
+            Delete
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   </div>
 </template>
